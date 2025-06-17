@@ -1,5 +1,5 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const config = require('../../config');
 
 // Importar modelos
 const defineProduct = require('./models/Product');
@@ -9,12 +9,12 @@ const defineDelivery = require('./models/Delivery');
 
 const sequelize = new Sequelize({
   dialect: 'postgres',
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  host: config.db.host,
+  port: config.db.port,
+  database: config.db.database,
+  username: config.db.user,
+  password: config.db.password,
+  logging: config.nodeEnv === 'development' ? console.log : false,
   define: {
     timestamps: true,
     underscored: true
@@ -35,10 +35,18 @@ Delivery.belongsTo(Transaction);
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        console.log('Database connection established successfully.');
+        console.log('Conexión a la base de datos establecida exitosamente.');
 
+        // Sincronizar modelos con la base de datos
         await sequelize.sync({ alter: true });
-        console.log('Database models synchronized.');
+        
+        // Mostrar las tablas creadas
+        console.log('\n=== Tablas sincronizadas en la base de datos ===');
+        console.log('✓ products - Tabla de productos');
+        console.log('✓ customers - Tabla de clientes');
+        console.log('✓ transactions - Tabla de transacciones');
+        console.log('✓ deliveries - Tabla de entregas');
+        console.log('============================================\n');
 
         return {
             sequelize,
@@ -50,7 +58,7 @@ const connectDB = async () => {
             }
         };
     } catch (error) {
-        console.error('Error connecting to database:', error);
+        console.error('Error al conectar con la base de datos:', error);
         throw error;
     }
 };
@@ -58,9 +66,17 @@ const connectDB = async () => {
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Connection to PostgreSQL has been established successfully.');
+    console.log('Conexión a PostgreSQL establecida exitosamente.');
+    
+    // Mostrar información de la base de datos
+    const [results] = await sequelize.query("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';");
+    console.log('\n=== Tablas existentes en la base de datos ===');
+    results.forEach(result => {
+      console.log(`✓ ${result.tablename}`);
+    });
+    console.log('==========================================\n');
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('No se pudo conectar a la base de datos:', error);
     throw error;
   }
 };
