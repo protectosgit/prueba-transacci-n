@@ -5,15 +5,21 @@ class GetProductUseCase {
         this.productRepository = productRepository;
     }
 
-    async execute(id) {
+    async execute(productId) {
         try {
-            const product = await this.productRepository.getById(id);
+            if (!productId) {
+                return Result.fail('ID de producto inválido');
+            }
+
+            const product = await this.productRepository.findById(productId);
+            
             if (!product) {
                 return Result.fail('Producto no encontrado');
             }
+
             return Result.ok(product);
         } catch (error) {
-            return Result.fail(error.message);
+            return Result.fail(`Error al obtener el producto: ${error.message}`);
         }
     }
 }

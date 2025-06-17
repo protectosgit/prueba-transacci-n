@@ -1,16 +1,16 @@
 class Result {
-    constructor(isSuccess, error, value) {
+    constructor(isSuccess, value, error) {
         this.isSuccess = isSuccess;
-        this.error = error;
         this.value = value;
+        this.error = error;
     }
 
     static ok(value) {
-        return new Result(true, null, value);
+        return new Result(true, value, null);
     }
 
     static fail(error) {
-        return new Result(false, error, null);
+        return new Result(false, null, error);
     }
 
     static async from(promise) {
@@ -20,6 +20,13 @@ class Result {
         } catch (error) {
             return Result.fail(error);
         }
+    }
+
+    toString() {
+        if (this.isSuccess) {
+            return `Success: ${JSON.stringify(this.value)}`;
+        }
+        return `Error: ${this.error}`;
     }
 }
 

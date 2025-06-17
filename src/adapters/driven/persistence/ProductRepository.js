@@ -1,45 +1,53 @@
-const IProductRepository = require('../../../domain/repositories/IProductRepository');
 const Product = require('../../../domain/entities/Product');
 
-class ProductRepository extends IProductRepository {
-    constructor(productModel) {
-        super();
-        this.productModel = productModel;
+class ProductRepository {
+    constructor(model) {
+        this.model = model;
     }
 
-    async getById(productId) {
+    async findById(id) {
         try {
-            const product = await this.productModel.findByPk(productId);
-            if (!product) return null;
-
-            return new Product(
-                product.name,
-                product.description,
-                product.price,
-                product.stock,
-                product.id
-            );
+            const productModel = await this.model.findByPk(id);
+            if (!productModel) return null;
+            
+            return new Product(productModel.toJSON());
         } catch (error) {
-            throw new Error(`Error al obtener producto: ${error.message}`);
+            throw new Error(`Error al buscar el producto: ${error.message}`);
         }
     }
 
     async update(product) {
         try {
-            await this.productModel.update(
-                {
-                    name: product.name,
-                    description: product.description,
-                    price: product.price,
-                    stock: product.stock
-                },
-                {
-                    where: { id: product.id }
-                }
-            );
+            await this.model.update(product, {
+                where: { id: product.id }
+            });
             return product;
         } catch (error) {
-            throw new Error(`Error al actualizar producto: ${error.message}`);
+            throw new Error(`Error al actualizar el producto: ${error.message}`);
+        }
+    }
+
+    async create(productData) {
+        try {
+            // Omitimos el id para que Sequelize lo genere automáticamente
+            const { id, ...data } = productData;
+            const productModel = await this.model.create(data);
+            return new Product(productModel.toJSON());
+        } catch (error) {
+            throw new Error(`Error al crear el producto: ${error.message}`);
+        }
+    }
+
+    async save(product) {
+        try {
+            // Si el producto ya tiene ID, actualizamos
+            if (product.id) {
+                return await this.update(product);
+            }
+            // Si no tiene ID, creamos uno nuevo
+            return await this.create(product);
+        } catch (error) {
+            throw new Error(`Error al guardar el producto: ${error.message}`);
         }
     }
 }

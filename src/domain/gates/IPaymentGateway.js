@@ -1,6 +1,6 @@
 class IPaymentGateway {
-    async processPayment(paymentDetails) {
-        throw new Error('Método no implementado');
+    async processPayment(paymentData) {
+        throw new Error('Method not implemented');
     }
 
     async getTransactionStatus(wompiTransactionId) {

@@ -3,67 +3,75 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
     const Transaction = sequelize.define('Transaction', {
         id: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
             primaryKey: true
         },
-        productId: {
-            type: DataTypes.UUID,
-            allowNull: false,
-            references: {
-                model: 'Products',
-                key: 'id'
-            }
-        },
         customerId: {
-            type: DataTypes.UUID,
+            type: DataTypes.INTEGER,
             allowNull: false,
             references: {
                 model: 'Customers',
                 key: 'id'
             }
         },
-        deliveryInfo: {
-            type: DataTypes.JSON,
-            allowNull: false
+        productId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'Products',
+                key: 'id'
+            }
         },
         amount: {
             type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-        baseFee: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-        deliveryFee: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-        totalAmount: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
+            allowNull: false,
+            validate: {
+                min: 0
+            }
         },
         status: {
-            type: DataTypes.ENUM('PENDING', 'COMPLETED', 'FAILED'),
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'PENDING',
+            validate: {
+                isIn: [['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED']]
+            }
+        },
+        paymentMethod: {
+            type: DataTypes.STRING,
             allowNull: false
         },
-        transactionDate: {
+        paymentToken: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        createdAt: {
             type: DataTypes.DATE,
-            allowNull: false
+            allowNull: false,
+            defaultValue: DataTypes.NOW
         },
-        paymentProviderId: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        paymentStatusMessage: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
-        paymentMethodType: {
-            type: DataTypes.STRING,
-            allowNull: true
+        updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW
         }
+    }, {
+        tableName: 'Transactions',
+        timestamps: true,
+        freezeTableName: true
     });
+
+    Transaction.associate = (models) => {
+        Transaction.belongsTo(models.Customer, {
+            foreignKey: 'customerId',
+            as: 'customer'
+        });
+        Transaction.belongsTo(models.Product, {
+            foreignKey: 'productId',
+            as: 'product'
+        });
+    };
 
     return Transaction;
 }; 

@@ -3,8 +3,8 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
     const Customer = sequelize.define('Customer', {
         id: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
             primaryKey: true
         },
         firstName: {
@@ -24,6 +24,10 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         }
+    }, {
+        tableName: 'Customers',
+        timestamps: true,
+        freezeTableName: true
     });
 
     return Customer;

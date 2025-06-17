@@ -1,80 +1,58 @@
-const ITransactionRepository = require('../../../domain/repositories/ITransactionRepository');
-const Transaction = require('../../../domain/entities/Transaction');
+const { models } = require('../../../infrastructure/database/connection');
 
-class TransactionRepository extends ITransactionRepository {
-    constructor(transactionModel) {
-        super();
-        this.transactionModel = transactionModel;
+class TransactionRepository {
+    constructor(model) {
+        this.model = model;
     }
 
     async save(transaction) {
         try {
-            const savedTransaction = await this.transactionModel.create({
-                id: transaction.id,
-                productId: transaction.productId,
-                customerId: transaction.customerId,
-                deliveryInfo: transaction.deliveryInfo,
-                amount: transaction.amount,
-                baseFee: transaction.baseFee,
-                deliveryFee: transaction.deliveryFee,
-                totalAmount: transaction.totalAmount,
-                status: transaction.status,
-                transactionDate: transaction.transactionDate,
-                wompiTransactionId: transaction.wompiTransactionId,
-                wompiStatusMessage: transaction.wompiStatusMessage,
-                wompiPaymentMethodType: transaction.wompiPaymentMethodType
+            const savedTransaction = await this.model.create(transaction);
+            return savedTransaction;
+        } catch (error) {
+            throw new Error(`Error al guardar la transacción: ${error.message}`);
+        }
+    }
+
+    async update(transaction) {
+        try {
+            await this.model.update(transaction, {
+                where: { id: transaction.id }
             });
+            return transaction;
+        } catch (error) {
+            throw new Error(`Error al actualizar la transacción: ${error.message}`);
+        }
+    }
 
-            return new Transaction({
-                ...savedTransaction.toJSON(),
-                id: savedTransaction.id
+    async findById(id) {
+        try {
+            const transaction = await this.model.findByPk(id);
+            return transaction;
+        } catch (error) {
+            throw new Error(`Error al buscar la transacción: ${error.message}`);
+        }
+    }
+
+    async findByCustomerId(customerId) {
+        try {
+            const transactions = await this.model.findAll({
+                where: { customerId }
             });
+            return transactions;
         } catch (error) {
-            throw new Error(`Error al guardar transacción: ${error.message}`);
+            throw new Error(`Error al buscar transacciones del cliente: ${error.message}`);
         }
     }
 
-    async getById(transactionId) {
+    async findByStatus(status) {
         try {
-            const transaction = await this.transactionModel.findByPk(transactionId);
-            if (!transaction) return null;
-
-            return new Transaction(transaction.toJSON());
+            const transactions = await this.model.findAll({
+                where: { status }
+            });
+            return transactions;
         } catch (error) {
-            throw new Error(`Error al obtener transacción: ${error.message}`);
-        }
-    }
-
-    async updateStatus(transactionId, newStatus) {
-        try {
-            await this.transactionModel.update(
-                { status: newStatus },
-                { where: { id: transactionId } }
-            );
-        } catch (error) {
-            throw new Error(`Error al actualizar estado de transacción: ${error.message}`);
-        }
-    }
-
-    async updateWompiIdAndStatus(
-        transactionId,
-        wompiId,
-        newStatus,
-        wompiStatusMessage,
-        wompiPaymentMethodType
-    ) {
-        try {
-            await this.transactionModel.update(
-                {
-                    wompiTransactionId: wompiId,
-                    status: newStatus,
-                    wompiStatusMessage: wompiStatusMessage,
-                    wompiPaymentMethodType: wompiPaymentMethodType
-                },
-                { where: { id: transactionId } }
-            );
-        } catch (error) {
-            throw new Error(`Error al actualizar información de Wompi: ${error.message}`);
+            throw new Error(`Error al buscar transacciones por estado: ${error.message}`);
         }
     }
 }

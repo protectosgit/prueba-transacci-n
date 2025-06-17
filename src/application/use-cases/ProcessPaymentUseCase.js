@@ -1,107 +1,131 @@
 const Result = require('../../utils/Result');
-const Customer = require('../../domain/entities/Customer');
-const Transaction = require('../../domain/entities/Transaction');
-const Delivery = require('../../domain/entities/Delivery');
-const InsufficientStockException = require('../../domain/exceptions/InsufficientStockException');
 
 class ProcessPaymentUseCase {
     constructor(
-        productRepository,
-        customerRepository,
         transactionRepository,
-        deliveryRepository,
+        productRepository,
         paymentGateway
     ) {
-        this.productRepository = productRepository;
-        this.customerRepository = customerRepository;
         this.transactionRepository = transactionRepository;
-        this.deliveryRepository = deliveryRepository;
+        this.productRepository = productRepository;
         this.paymentGateway = paymentGateway;
-        this.BASE_FEE = 1000; // $10.00
-        this.DELIVERY_FEE = 5000; // $50.00
     }
 
-    async execute(paymentDTO) {
+    async execute(paymentData) {
         try {
-            // 1. Obtener y verificar producto
-            const product = await this.productRepository.getById(paymentDTO.productId);
+            console.log('Iniciando procesamiento de pago...');
+            
+            // Validar datos de entrada
+            this.validatePaymentData(paymentData);
+            console.log('Datos de pago validados');
+
+            // Obtener producto y verificar stock
+            console.log('Buscando producto con ID:', paymentData.productId);
+            const product = await this.productRepository.findById(paymentData.productId);
             if (!product) {
+                console.log('Producto no encontrado');
                 return Result.fail('Producto no encontrado');
             }
-            if (product.stock < 1) {
-                throw new InsufficientStockException();
+            console.log('Producto encontrado:', JSON.stringify(product, null, 2));
+
+            if (!product.hasStock || !product.hasStock(1)) {
+                console.log('Stock insuficiente');
+                return Result.fail('Stock insuficiente');
             }
+            console.log('Stock verificado');
 
-            // 2. Gestionar cliente
-            let customer = await this.customerRepository.getByEmail(paymentDTO.customerInfo.email);
-            if (!customer) {
-                customer = new Customer(
-                    paymentDTO.customerInfo.firstName,
-                    paymentDTO.customerInfo.lastName,
-                    paymentDTO.customerInfo.email,
-                    paymentDTO.customerInfo.phone
-                );
-                await this.customerRepository.save(customer);
-            }
-
-            // 3. Crear transacción
-            const transaction = new Transaction({
-                productId: product.id,
-                customerId: customer.id,
-                deliveryInfo: paymentDTO.deliveryInfo,
-                amount: product.price,
-                baseFee: this.BASE_FEE,
-                deliveryFee: this.DELIVERY_FEE
+            // Crear transacción inicial
+            console.log('Creando transacción...');
+            const transaction = await this.transactionRepository.save({
+                customerId: paymentData.customerId,
+                productId: paymentData.productId,
+                amount: paymentData.amount,
+                status: 'PENDING',
+                paymentMethod: paymentData.paymentMethod,
+                paymentToken: paymentData.paymentToken
             });
-            await this.transactionRepository.save(transaction);
-
-            // 4. Crear registro de entrega
-            const delivery = new Delivery({
-                transactionId: transaction.id,
-                ...paymentDTO.deliveryInfo
-            });
-            await this.deliveryRepository.save(delivery);
+            console.log('Transacción creada:', JSON.stringify(transaction, null, 2));
 
             try {
-                // 5. Procesar pago con Wompi
+                // Procesar pago
+                console.log('Procesando pago con gateway...');
                 const paymentResult = await this.paymentGateway.processPayment({
-                    amountInCents: Math.round(transaction.totalAmount * 100),
-                    currency: 'COP',
-                    cardToken: paymentDTO.cardToken,
-                    customerEmail: customer.email,
-                    reference: transaction.id
+                    amount: paymentData.amount,
+                    token: paymentData.paymentToken,
+                    transactionId: transaction.id
+                });
+                console.log('Resultado del gateway:', JSON.stringify(paymentResult, null, 2));
+
+                if (paymentResult.success) {
+                    // Actualizar stock
+                    console.log('Actualizando stock del producto...');
+                    product.updateStock(product.stock - 1);
+                    await this.productRepository.update(product);
+                    console.log('Stock actualizado');
+
+                    // Actualizar transacción como completada
+                    console.log('Actualizando estado de la transacción a COMPLETED...');
+                    await this.transactionRepository.update({
+                        ...transaction,
+                        status: 'COMPLETED'
+                    });
+
+                    return Result.ok({
+                        success: true,
+                        transactionId: transaction.id,
+                        message: 'Pago procesado exitosamente'
+                    });
+                } else {
+                    // Actualizar transacción como fallida
+                    console.log('Actualizando estado de la transacción a FAILED...');
+                    await this.transactionRepository.update({
+                        ...transaction,
+                        status: 'FAILED'
+                    });
+
+                    return Result.fail(paymentResult.message);
+                }
+            } catch (error) {
+                console.error('Error en el procesamiento del pago:', error);
+                // Actualizar transacción como fallida en caso de error
+                console.log('Actualizando estado de la transacción a FAILED debido a error...');
+                await this.transactionRepository.update({
+                    ...transaction,
+                    status: 'FAILED'
                 });
 
-                // 6. Actualizar transacción con resultado de Wompi
-                await this.transactionRepository.updateWompiIdAndStatus(
-                    transaction.id,
-                    paymentResult.id,
-                    paymentResult.status,
-                    paymentResult.statusMessage,
-                    paymentResult.paymentMethod
-                );
-
-                // 7. Si el pago es exitoso, actualizar stock
-                if (paymentResult.status === 'APPROVED') {
-                    product.decreaseStock(1);
-                    await this.productRepository.update(product);
-                }
-
-                return Result.ok(new PaymentResultDTO(
-                    transaction.id,
-                    paymentResult.status,
-                    paymentResult.statusMessage,
-                    product.stock,
-                    paymentResult.id
-                ));
-            } catch (error) {
-                // 8. En caso de error, marcar la transacción como fallida
-                await this.transactionRepository.updateStatus(transaction.id, 'FAILED');
-                throw error;
+                return Result.fail(`Error procesando el pago: ${error.message}`);
             }
         } catch (error) {
+            console.error('Error en execute:', error);
             return Result.fail(error.message);
         }
+    }
+
+    validatePaymentData(paymentData) {
+        console.log('Validando datos de pago:', JSON.stringify(paymentData, null, 2));
+        
+        if (!paymentData.productId) {
+            throw new Error('ID de producto inválido');
+        }
+
+        if (!paymentData.customerId) {
+            throw new Error('ID de cliente inválido');
+        }
+
+        if (!paymentData.amount || paymentData.amount <= 0) {
+            throw new Error('El monto debe ser mayor a 0');
+        }
+
+        if (!paymentData.paymentMethod) {
+            throw new Error('Método de pago inválido');
+        }
+
+        if (!paymentData.paymentToken) {
+            throw new Error('Token de pago inválido');
+        }
+        
+        console.log('Datos de pago válidos');
     }
 }
 

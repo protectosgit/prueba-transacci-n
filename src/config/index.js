@@ -1,17 +1,30 @@
-require('dotenv').config();
+function getNumberEnv(key, defaultValue) {
+    const value = process.env[key];
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
 
-module.exports = {
-    port: process.env.PORT || 3000,
-    nodeEnv: process.env.NODE_ENV || 'development',
-    db: {
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || 5432,
-        user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || 'root',
-        database: process.env.DB_NAME || 'pasarela'
+function getStringEnv(key, defaultValue) {
+    return process.env[key] || defaultValue;
+}
+
+const config = {
+    nodeEnv: getStringEnv('NODE_ENV', 'development'),
+    port: getNumberEnv('PORT', 3000),
+    database: {
+        host: getStringEnv('DB_HOST', 'localhost'),
+        port: getNumberEnv('DB_PORT', 5432),
+        name: getStringEnv('DB_NAME', 'pasarela'),
+        user: getStringEnv('DB_USER', 'postgres'),
+        password: getStringEnv('DB_PASSWORD', 'postgres'),
+        dialect: 'postgres'
     },
     wompi: {
-        apiKey: process.env.WOMPI_API_KEY,
-        apiUrl: process.env.WOMPI_API_URL
+        apiUrl: getStringEnv('WOMPI_API_URL', 'https://sandbox.wompi.co/v1'),
+        publicKey: getStringEnv('WOMPI_PUBLIC_KEY', 'pub_test_key'),
+        privateKey: getStringEnv('WOMPI_PRIVATE_KEY', 'priv_test_key'),
+        eventsKey: getStringEnv('WOMPI_EVENTS_KEY', 'events_test_key')
     }
 };
+
+module.exports = config;

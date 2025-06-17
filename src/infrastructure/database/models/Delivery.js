@@ -3,12 +3,12 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
     const Delivery = sequelize.define('Delivery', {
         id: {
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4,
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
             primaryKey: true
         },
         transactionId: {
-            type: DataTypes.UUID,
+            type: DataTypes.INTEGER,
             allowNull: false,
             references: {
                 model: 'Transactions',
@@ -39,7 +39,18 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         }
+    }, {
+        tableName: 'Deliveries',
+        timestamps: true,
+        freezeTableName: true
     });
+
+    Delivery.associate = (models) => {
+        Delivery.belongsTo(models.Transaction, {
+            foreignKey: 'transactionId',
+            as: 'transaction'
+        });
+    };
 
     return Delivery;
 }; 
