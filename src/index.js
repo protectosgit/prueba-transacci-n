@@ -98,10 +98,12 @@ const startServer = async () => {
 
     // Iniciar el servidor
     const PORT = process.env.PORT || 3000;
-    const httpServer = app.listen(PORT, () => {
-      console.log(`🚀 Servidor iniciado en el puerto ${PORT}`);
-      console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📡 API URL: http://localhost:${PORT}/api`);
+    const HOST = process.env.HOST || '0.0.0.0'; // Escuchar en todas las interfaces
+    const httpServer = app.listen(PORT, HOST, () => {
+      console.log(`Servidor iniciado en ${HOST}:${PORT}`);
+      console.log(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`API URL: http://localhost:${PORT}/api`);
+      console.log(`Aceptando conexiones desde cualquier origen`);
     });
 
     // Manejo de cierre graceful

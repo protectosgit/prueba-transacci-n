@@ -10,7 +10,38 @@ class Server {
     }
 
     setupMiddleware() {
-        this.app.use(cors());
+        // Configuración de CORS para aceptar conexiones desde cualquier origen
+        const corsOptions = {
+            origin: '*', 
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+            allowedHeaders: [
+                'Origin', 
+                'X-Requested-With', 
+                'Content-Type', 
+                'Accept', 
+                'Authorization',
+                'Cache-Control',
+                'X-Forwarded-For'
+            ],
+            credentials: false,
+            optionsSuccessStatus: 200 // Para soporte de navegadores legacy
+        };
+        
+        this.app.use(cors(corsOptions));
+        
+        // Middleware adicional para headers de seguridad
+        this.app.use((req, res, next) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-Forwarded-For');
+            
+            if (req.method === 'OPTIONS') {
+                res.status(200).end();
+                return;
+            }
+            next();
+        });
+        
         this.app.use(express.json());
     }
 

@@ -11,6 +11,7 @@ function getStringEnv(key, defaultValue) {
 const config = {
     nodeEnv: getStringEnv('NODE_ENV', 'development'),
     port: getNumberEnv('PORT', 3000),
+    host: getStringEnv('HOST', '0.0.0.0'), // Permitir conexiones desde cualquier IP
     database: {
         host: getStringEnv('DB_HOST', 'localhost'),
         port: getNumberEnv('DB_PORT', 5432),
