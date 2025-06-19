@@ -12,12 +12,20 @@ class CustomerRepository extends ICustomerRepository {
             const [customerData, created] = await this.customerModel.findOrCreate({
                 where: { email: customer.email },
                 defaults: {
-                    id: customer.id,
                     firstName: customer.firstName,
                     lastName: customer.lastName,
                     phone: customer.phone
                 }
             });
+
+            if (!created) {
+                // Si el cliente ya existe, actualizar sus datos
+                await customerData.update({
+                    firstName: customer.firstName,
+                    lastName: customer.lastName,
+                    phone: customer.phone
+                });
+            }
 
             return new Customer(
                 customerData.firstName,
@@ -31,7 +39,7 @@ class CustomerRepository extends ICustomerRepository {
         }
     }
 
-    async getByEmail(email) {
+    async findByEmail(email) {
         try {
             const customer = await this.customerModel.findOne({
                 where: { email }
@@ -65,6 +73,26 @@ class CustomerRepository extends ICustomerRepository {
             );
         } catch (error) {
             throw new Error(`Error al buscar cliente por ID: ${error.message}`);
+        }
+    }
+
+    async update(customer) {
+        try {
+            const [updatedCount] = await this.customerModel.update({
+                firstName: customer.firstName,
+                lastName: customer.lastName,
+                phone: customer.phone
+            }, {
+                where: { id: customer.id }
+            });
+
+            if (updatedCount === 0) {
+                throw new Error('No se encontró el cliente para actualizar');
+            }
+
+            return this.getById(customer.id);
+        } catch (error) {
+            throw new Error(`Error al actualizar cliente: ${error.message}`);
         }
     }
 }

@@ -13,6 +13,14 @@ class Result {
         return new Result(false, null, error);
     }
 
+    static success(value) {
+        return new Result(true, value, null);
+    }
+
+    static failure(error) {
+        return new Result(false, null, error);
+    }
+
     static async from(promise) {
         try {
             const value = await promise;

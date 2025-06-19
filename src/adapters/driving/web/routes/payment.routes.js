@@ -22,8 +22,17 @@ module.exports = (paymentController) => {
     // Webhook para actualizaciones de Wompi
     router.post('/webhook', (req, res) => paymentController.handleWebhook(req, res));
 
+    // Crear transacción previa al pago (NUEVO)
+    router.post('/create-transaction', (req, res) => paymentController.createTransaction(req, res));
+
     // Generar firma de integridad para Wompi (ESTE SÍ FUNCIONA)
     router.post('/integrity', generateIntegritySignature);
+
+    // Endpoint para actualizar estado de transacción (para testing)
+    router.post('/:id/update-status', (req, res) => paymentController.updateTransactionStatus(req, res));
+
+    // Endpoint para verificar estado real en Wompi
+    router.get('/:id/check-wompi', (req, res) => paymentController.checkWompiStatus(req, res));
 
     return router;
 }; 

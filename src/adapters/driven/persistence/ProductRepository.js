@@ -27,6 +27,27 @@ class ProductRepository {
         }
     }
 
+    async updateStock(productId, newStock) {
+        try {
+            console.log(`Actualizando stock del producto ${productId} a ${newStock}`);
+            
+            const [updatedRowsCount] = await this.model.update(
+                { stock: newStock },
+                { where: { id: productId } }
+            );
+
+            if (updatedRowsCount === 0) {
+                throw new Error('Producto no encontrado o no se pudo actualizar');
+            }
+
+            console.log(`Stock actualizado exitosamente para producto ${productId}`);
+            return await this.findById(productId);
+        } catch (error) {
+            console.error('Error actualizando stock:', error);
+            throw new Error(`Error al actualizar stock del producto: ${error.message}`);
+        }
+    }
+
     async create(productData) {
         try {
             // Omitimos el id para que Sequelize lo genere automáticamente

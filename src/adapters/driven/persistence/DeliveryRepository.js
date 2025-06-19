@@ -10,8 +10,8 @@ class DeliveryRepository extends IDeliveryRepository {
     async save(delivery) {
         try {
             const savedDelivery = await this.deliveryModel.create({
-                id: delivery.id,
                 transactionId: delivery.transactionId,
+                customerId: delivery.customerId,
                 address: delivery.address,
                 city: delivery.city,
                 department: delivery.department,
@@ -37,6 +37,26 @@ class DeliveryRepository extends IDeliveryRepository {
             return new Delivery(delivery.toJSON());
         } catch (error) {
             throw new Error(`Error al obtener entrega: ${error.message}`);
+        }
+    }
+
+    async update(delivery) {
+        try {
+            await this.deliveryModel.update({
+                address: delivery.address,
+                city: delivery.city,
+                department: delivery.department,
+                postalCode: delivery.postalCode,
+                recipientName: delivery.recipientName,
+                recipientPhone: delivery.recipientPhone
+            }, {
+                where: { id: delivery.id }
+            });
+
+            const updatedDelivery = await this.deliveryModel.findByPk(delivery.id);
+            return new Delivery(updatedDelivery.toJSON());
+        } catch (error) {
+            throw new Error(`Error al actualizar entrega: ${error.message}`);
         }
     }
 }
