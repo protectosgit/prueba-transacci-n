@@ -123,6 +123,39 @@ class PaymentController {
         try {
             const { id } = req.params;
 
+            // Intentar encontrar la transacción directamente en el repositorio
+            const transaction = await this.transactionRepository.findByReference(id);
+
+            if (transaction) {
+                // Si la transacción existe, devolverla con todos sus datos
+                return res.json({
+                    success: true,
+                    data: {
+                        id: transaction.id,
+                        reference: transaction.reference,
+                        amount: transaction.amount,
+                        status: transaction.status,
+                        paymentMethod: transaction.paymentMethod,
+                        paymentToken: transaction.paymentToken,
+                        wompiTransactionId: transaction.wompiTransactionId,
+                        wompiStatus: transaction.wompiStatus,
+                        customer: transaction.customer,
+                        product: transaction.product,
+                        cartItems: transaction.cartItems || [],
+                        deliveryInfo: transaction.deliveryInfo,
+                        totalItems: transaction.totalItems || (transaction.cartItems ? transaction.cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0),
+                        createdAt: transaction.createdAt,
+                        updatedAt: transaction.updatedAt,
+                        metadata: {
+                            hasMultipleProducts: transaction.cartItems && transaction.cartItems.length > 1,
+                            hasDeliveryInfo: !!transaction.deliveryInfo,
+                            dataSource: 'transaction_record'
+                        }
+                    }
+                });
+            }
+
+            // Si no existe, usar el caso de uso original
             const result = await this.getPaymentStatusUseCase.execute(id);
 
             if (result.isSuccess) {
@@ -332,10 +365,10 @@ class PaymentController {
                 });
             }
 
-            // Consultar directamente en Wompi API
+            // Consultar directamente en Wompi API (usar staging para pruebas)
             const wompiResponse = await fetch(`https://production.wompi.co/v1/transactions/${id}`, {
                 headers: {
-                    'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+                    'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY_STAGING}`,
                     'Content-Type': 'application/json'
                 }
             });
