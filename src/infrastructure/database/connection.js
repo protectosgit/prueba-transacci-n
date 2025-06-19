@@ -33,7 +33,7 @@ const dropAllTables = async (sequelizeInstance) => {
         await sequelizeInstance.query('DROP TABLE IF EXISTS "Products" CASCADE');
         await sequelizeInstance.query('DROP TABLE IF EXISTS "Customers" CASCADE');
         await sequelizeInstance.query('DROP TYPE IF EXISTS "enum_transactions_status" CASCADE');
-        console.log('Todas las tablas han sido eliminadas.');
+    
     } catch (error) {
         console.error('Error al eliminar las tablas:', error);
         throw error;
@@ -44,18 +44,18 @@ const createTablesInOrder = async (models) => {
     try {
         // Primero crear las tablas base (sin dependencias)
         await models.Customer.sync();
-        console.log('Tabla Customers verificada');
+
         
         await models.Product.sync();
-        console.log('Tabla Products verificada');
+
 
         // Luego crear la tabla de transacciones que depende de las anteriores
         await models.Transaction.sync();
-        console.log('Tabla Transactions verificada');
+
 
         // Finalmente crear la tabla de entregas que depende de transacciones
         await models.Delivery.sync();
-        console.log(' Tabla Deliveries verificada');
+
     } catch (error) {
         console.error('Error al verificar las tablas:', error);
         throw error;
@@ -73,8 +73,8 @@ const connectDB = async (forceSync = false) => {
         // Crear nueva conexión
         // Configuración para Render y otras plataformas que usan DATABASE_URL
         if (config.database.url) {
-            console.log('🔗 Conectando usando DATABASE_URL...');
-            console.log('🔑 URL de conexión:', config.database.url.replace(/:([^:@]{8})[^:@]*@/, ':***$1***@'));
+    
+
             
             // Configuración optimizada para Render PostgreSQL
             const dialectOptions = {};
@@ -85,7 +85,7 @@ const connectDB = async (forceSync = false) => {
                     require: true,
                     rejectUnauthorized: false
                 };
-                console.log('🔒 SSL habilitado para conexión de producción');
+
             }
             
             sequelize = new Sequelize(config.database.url, {
@@ -100,10 +100,10 @@ const connectDB = async (forceSync = false) => {
                 }
             });
         } else {
-            console.log('🔗 Conectando usando configuración individual...');
-            console.log('🏠 Host:', config.database.host);
-            console.log('🔢 Puerto:', config.database.port);
-            console.log('📊 BD:', config.database.name);
+
+
+
+
             
             sequelize = new Sequelize(
                 config.database.name,
@@ -125,7 +125,7 @@ const connectDB = async (forceSync = false) => {
         }
 
         await sequelize.authenticate();
-        console.log('Conexión a la base de datos establecida exitosamente.');
+
 
         // Solo eliminar tablas si forceSync es true
         if (forceSync) {
@@ -138,9 +138,9 @@ const connectDB = async (forceSync = false) => {
         // Crear o verificar tablas en orden
         await createTablesInOrder(models);
         
-        console.log('\n=== Base de datos sincronizada exitosamente ===');
-        console.log('Todas las tablas y relaciones han sido verificadas');
-        console.log('============================================\n');
+
+
+
 
         return {
             sequelize,
@@ -158,14 +158,14 @@ const testConnection = async () => {
             throw new Error('No hay conexión a la base de datos');
         }
         await sequelize.authenticate();
-        console.log('Conexión a PostgreSQL establecida exitosamente.');
+
         
         const [results] = await sequelize.query("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';");
-        console.log('\n=== Tablas existentes en la base de datos ===');
+
         results.forEach(result => {
-            console.log(`✓ ${result.tablename}`);
+
         });
-        console.log('==========================================\n');
+
     } catch (error) {
         console.error('No se pudo conectar a la base de datos:', error);
         throw error;

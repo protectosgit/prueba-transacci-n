@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('../../../config');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('../../../config/swagger');
 
 class Server {
     constructor(productRoutes, paymentRoutes) {
@@ -16,34 +18,23 @@ class Server {
             origin: (origin, callback) => {
                 // Permitir requests sin origin (aplicaciones móviles, Postman, etc.)
                 if (!origin) {
-                    if (config.logging.enableRequests) {
-                        console.log('🌐 Request sin origin permitido (móvil/Postman)');
-                    }
                     return callback(null, true);
                 }
                 
                 // En desarrollo, ser más permisivo con localhost
                 if (config.nodeEnv !== 'production') {
                     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-                        if (config.logging.enableRequests) {
-                            console.log(`🌐 Origin localhost permitido: ${origin}`);
-                        }
                         return callback(null, true);
                     }
                 }
                 
                 // Verificar si el origin está en la lista de allowed origins
                 if (config.cors.allowedOrigins.includes(origin)) {
-                    if (config.logging.enableRequests) {
-                        console.log(`✅ Origin permitido: ${origin}`);
-                    }
                     callback(null, true);
                 } else {
                     if (config.nodeEnv === 'production') {
-                        console.warn(`❌ Origin no permitido en producción: ${origin}`);
                         callback(new Error(`Origin ${origin} no permitido por CORS`));
                     } else {
-                        console.log(`⚠️ Origin no en lista pero permitido en desarrollo: ${origin}`);
                         callback(null, true);
                     }
                 }
@@ -99,31 +90,49 @@ class Server {
             next();
         });
         
-        // Middleware de logging
-        if (config.logging.enableRequests) {
-            this.app.use((req, res, next) => {
-                const timestamp = new Date().toISOString();
-                const origin = req.headers.origin || 'Sin origin';
-                console.log(`🌐 [${timestamp}] ${req.method} ${req.path} - Origin: ${origin}`);
-                next();
-            });
-        }
+        // Middleware de logging deshabilitado para producción
         
         this.app.use(express.json());
         
-        // Log de configuración al iniciar
-        console.log('🔧 Configuración CORS cargada:');
-        console.log(`   📍 Entorno: ${config.nodeEnv}`);
-        console.log(`   🌐 Origins permitidos: ${config.cors.allowedOrigins.length} configurados`);
-        console.log(`   🔐 Credentials: ${config.cors.allowCredentials}`);
-        console.log(`   ⏱️ Max Age: ${config.cors.maxAge}s`);
+        // Configuración CORS cargada silenciosamente
     }
 
     setupRoutes(productRoutes, paymentRoutes) {
+        // Ruta principal
         this.app.get('/', (req, res) => {
-            res.json({ message: 'API de Procesamiento de Pagos' });
+            res.json({ 
+                message: 'API de Procesamiento de Pagos',
+                version: '1.0.0',
+                docs: '/api-docs',
+                endpoints: {
+                    products: '/api/products',
+                    payments: '/api/payments'
+                }
+            });
         });
 
+        // Swagger UI Documentation
+        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+            explorer: true,
+            customCss: `
+                .swagger-ui .topbar { display: none; }
+                .swagger-ui .info .title { color: #3b82f6; }
+                .swagger-ui .scheme-container { background: #f8fafc; }
+            `,
+            customSiteTitle: "Payment Processing API - Documentación"
+        }));
+
+        // Health check endpoint
+        this.app.get('/health', (req, res) => {
+            res.json({
+                status: 'OK',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                environment: config.nodeEnv
+            });
+        });
+
+        // API Routes
         this.app.use('/api/products', productRoutes);
         this.app.use('/api/payments', paymentRoutes);
 
@@ -131,7 +140,13 @@ class Server {
         this.app.use((req, res) => {
             res.status(404).json({
                 success: false,
-                message: 'Ruta no encontrada'
+                message: 'Ruta no encontrada',
+                availableEndpoints: {
+                    docs: '/api-docs',
+                    health: '/health',
+                    products: '/api/products',
+                    payments: '/api/payments'
+                }
             });
         });
     }

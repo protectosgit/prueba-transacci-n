@@ -9,7 +9,7 @@ class GetPaymentStatusUseCase {
 
     async execute(identifier) {
         try {
-            console.log('GetPaymentStatusUseCase: Buscando pago con identificador:', identifier);
+    
 
             // Intentar buscar por ID primero, luego por referencia
             let transaction = null;
@@ -25,11 +25,11 @@ class GetPaymentStatusUseCase {
             }
 
             if (!transaction) {
-                console.log('GetPaymentStatusUseCase: Transacción no encontrada para:', identifier);
+    
                 return Result.fail('Transacción no encontrada');
             }
 
-            console.log('GetPaymentStatusUseCase: Transacción encontrada:', transaction);
+    
 
             // Obtener información adicional
             const customer = await this.customerRepository.getById(transaction.customerId);
@@ -83,7 +83,7 @@ class GetPaymentStatusUseCase {
                 }
             }
 
-            console.log('GetPaymentStatusUseCase: Datos del pago preparados:', paymentData);
+    
 
             return Result.ok(paymentData);
 

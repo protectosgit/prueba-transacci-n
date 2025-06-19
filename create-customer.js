@@ -7,7 +7,7 @@ async function createCustomer() {
         
         const customer = await models.Customer.create({
             firstName: 'Cliente',
-            lastName: 'Prueba',
+            lastName: 'murillo',
             email: 'cliente@ejemplo.com',
             phone: '1234567890'
         });

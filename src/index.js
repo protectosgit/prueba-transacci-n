@@ -35,9 +35,7 @@ const startServer = async () => {
     const { models, sequelize } = await connectDB();
     
     // Forzar sincronización del modelo Transaction para asegurar que las columnas existan
-    console.log('🔧 Sincronizando modelo Transaction...');
     await models.Transaction.sync({ alter: true });
-    console.log('✅ Modelo Transaction sincronizado');
     
     // Configurar repositorios
     const productRepository = new ProductRepository(models.Product);
@@ -100,17 +98,12 @@ const startServer = async () => {
     const PORT = process.env.PORT || 3000;
     const HOST = process.env.HOST || '0.0.0.0'; // Escuchar en todas las interfaces
     const httpServer = app.listen(PORT, HOST, () => {
-      console.log(`Servidor iniciado en ${HOST}:${PORT}`);
-      console.log(`Entorno: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`API URL: http://localhost:${PORT}/api`);
-      console.log(`Aceptando conexiones desde cualquier origen`);
+      // Servidor iniciado silenciosamente
     });
 
     // Manejo de cierre graceful
     const gracefulShutdown = () => {
-      console.log('👋 Señal de cierre recibida, cerrando servidor...');
       httpServer.close(() => {
-        console.log('✅ Servidor cerrado correctamente');
         process.exit(0);
       });
     };
@@ -119,7 +112,7 @@ const startServer = async () => {
     process.on('SIGINT', gracefulShutdown);
 
   } catch (error) {
-    console.error('❌ Error al iniciar el servidor:', error);
+    console.error( ' Error al iniciar el servidor:', error);
     process.exit(1);
   }
 };

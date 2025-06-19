@@ -7,7 +7,7 @@ module.exports = {
     host: config.db.host,
     port: config.db.port,
     dialect: 'postgres',
-    logging: config.nodeEnv === 'development' ? console.log : false,
+    logging: false,
     define: {
         timestamps: true,
         underscored: true

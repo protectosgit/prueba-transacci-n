@@ -29,7 +29,7 @@ class ProductRepository {
 
     async updateStock(productId, newStock) {
         try {
-            console.log(`Actualizando stock del producto ${productId} a ${newStock}`);
+    
             
             const [updatedRowsCount] = await this.model.update(
                 { stock: newStock },
@@ -40,7 +40,7 @@ class ProductRepository {
                 throw new Error('Producto no encontrado o no se pudo actualizar');
             }
 
-            console.log(`Stock actualizado exitosamente para producto ${productId}`);
+    
             return await this.findById(productId);
         } catch (error) {
             console.error('Error actualizando stock:', error);

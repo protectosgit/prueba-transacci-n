@@ -63,7 +63,7 @@ class TransactionRepository {
 
     async findByReference(reference) {
         try {
-            console.log('TransactionRepository: Buscando por referencia:', reference);
+    
             
             // Buscar en todos los campos que podrían contener la referencia
             const transaction = await this.model.findOne({
@@ -81,7 +81,7 @@ class TransactionRepository {
                 ]
             });
             
-            console.log('TransactionRepository: Transacción encontrada:', transaction ? 'Sí' : 'No');
+    
             return transaction;
         } catch (error) {
             console.error('Error en findByReference:', error);

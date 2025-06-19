@@ -1,6 +1,6 @@
 # Variables de Entorno - Payment Processing API
 
-## 🔧 Configuración Básica
+##  Configuración Básica
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -8,7 +8,7 @@
 | `PORT` | Puerto del servidor | `3000` | No |
 | `HOST` | IP del servidor | `0.0.0.0` | No |
 
-## 🌐 Configuración de CORS
+##  Configuración de CORS
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -21,7 +21,7 @@
 CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost:3000,https://mi-frontend.com
 ```
 
-## 🎨 URLs del Frontend
+##  URLs del Frontend
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -29,7 +29,7 @@ CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost
 | `FRONTEND_DEV_URL` | URL del frontend en desarrollo | `http://localhost:3000` | No |
 | `FRONTEND_PROD_URL` | URL del frontend en producción | URL de Amplify | No |
 
-## 🗄️ Base de Datos
+##  Base de Datos
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -41,7 +41,7 @@ CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost
 | `DB_PASSWORD` | Contraseña de la base de datos | Password de Render | **Sí** |
 | `DB_SSL` | Habilitar SSL | `true` en producción | No |
 
-## 💳 Wompi (Pasarela de Pagos)
+##  Wompi (Pasarela de Pagos)
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -51,7 +51,7 @@ CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost
 | `WOMPI_EVENTS_KEY` | Clave de eventos de Wompi | Clave de sandbox | **Sí** |
 | `WOMPI_INTEGRITY_KEY` | Clave de integridad de Wompi | Clave de sandbox | **Sí** |
 
-## 📊 Logging y Debugging
+## Logging y Debugging
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -59,7 +59,7 @@ CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost
 | `LOG_SQL` | Mostrar queries SQL | `false` | No |
 | `LOG_REQUESTS` | Mostrar requests HTTP | `true` en desarrollo | No |
 
-## 🔒 Seguridad
+##  Seguridad
 
 | Variable | Descripción | Valor por Defecto | Requerido |
 |----------|-------------|-------------------|-----------|
@@ -67,7 +67,7 @@ CORS_ALLOWED_ORIGINS=https://main.d10nqda7yg14nv.amplifyapp.com,http://localhost
 | `RATE_LIMIT_MAX` | Máximo requests por ventana | `100` | No |
 | `ENABLE_HELMET` | Habilitar headers de seguridad | `true` | No |
 
-## 🚀 Configuración para Desarrollo Local
+## Configuración para Desarrollo Local
 
 Crea un archivo `.env` en la raíz del proyecto:
 
@@ -96,7 +96,7 @@ LOG_REQUESTS=true
 LOG_SQL=false
 ```
 
-## 🏭 Configuración para Producción (Render)
+## Configuración para Producción (Render)
 
 Las variables se configuran en el Dashboard de Render:
 
@@ -121,7 +121,7 @@ LOG_REQUESTS=false
 LOG_SQL=false
 ```
 
-## ⚠️ Notas Importantes
+##  Notas Importantes
 
 1. **Nunca commits claves reales** al repositorio
 2. **Usa `sync: false`** en render.yaml para claves sensibles

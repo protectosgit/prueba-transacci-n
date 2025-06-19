@@ -9,7 +9,7 @@ class CreateTransactionUseCase {
 
     async execute(transactionData) {
         try {
-            console.log('CreateTransactionUseCase: Creando transacción con datos:', transactionData);
+    
 
             // Validar datos mínimos requeridos
             if (!transactionData.reference) {
@@ -31,7 +31,7 @@ class CreateTransactionUseCase {
             // Verificar si la transacción ya existe
             const existingTransaction = await this.transactionRepository.findByReference(transactionData.reference);
             if (existingTransaction) {
-                console.log('Transacción ya existe, actualizando con datos completos...');
+
                 
                 // Actualizar el cliente con los datos del frontend
                 try {
@@ -47,7 +47,7 @@ class CreateTransactionUseCase {
                     };
                     
                     customer = await this.customerRepository.update(updatedCustomerData);
-                    console.log('Cliente actualizado con datos del frontend:', customer);
+    
                 } catch (error) {
                     console.error('Error actualizando cliente:', error);
                 }
@@ -66,11 +66,6 @@ class CreateTransactionUseCase {
                     };
                     
                     await this.transactionRepository.update(updatedTransactionData);
-                    console.log('Transacción actualizada con datos completos:', {
-                        amount: transactionData.amount,
-                        cartItemsCount: transactionData.cartItems?.length || 0,
-                        hasDelivery: !!transactionData.deliveryData
-                    });
                 } catch (error) {
                     console.error('Error actualizando transacción:', error);
                 }
@@ -83,7 +78,7 @@ class CreateTransactionUseCase {
                             customerId: existingTransaction.customerId,
                             transactionId: existingTransaction.id
                         });
-                        console.log('Entrega procesada para transacción existente:', delivery);
+        
                     } catch (error) {
                         console.error('Error procesando entrega para transacción existente:', error);
                     }
@@ -119,7 +114,7 @@ class CreateTransactionUseCase {
                     };
                     customer = await this.customerRepository.update(updateData);
                 }
-                console.log('Cliente procesado:', customer);
+    
             } catch (error) {
                 console.error('Error procesando cliente:', error);
                 return Result.fail(`Error procesando cliente: ${error.message}`);
@@ -147,12 +142,7 @@ class CreateTransactionUseCase {
                 deliveryInfo: transactionData.deliveryData || null
             });
 
-            console.log('Transacción creada con datos completos:', {
-                id: transaction.id,
-                amount: transactionData.amount,
-                cartItemsCount: transactionData.cartItems?.length || 0,
-                hasDelivery: !!transactionData.deliveryData
-            });
+
 
             // Procesar entrega después de crear la transacción
             if (transactionData.deliveryData) {
@@ -162,7 +152,7 @@ class CreateTransactionUseCase {
                         customerId: customer.id,
                         transactionId: transaction.id
                     });
-                    console.log('Entrega procesada:', delivery);
+
 
                     // Actualizar la transacción con el ID de la entrega
                     transaction.deliveryId = delivery.id;

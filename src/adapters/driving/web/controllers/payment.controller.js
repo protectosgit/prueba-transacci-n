@@ -15,9 +15,7 @@ class PaymentController {
 
     async processPayment(req, res) {
         try {
-            console.log('Procesando pago con datos:', JSON.stringify(req.body, null, 2));
             const result = await this.processPaymentUseCase.execute(req.body);
-            console.log('Resultado del pago:', JSON.stringify(result, null, 2));
             res.status(200).json(result);
         } catch (error) {
             console.error('Error en processPayment:', error);
@@ -48,7 +46,6 @@ class PaymentController {
 
     async createTransaction(req, res) {
         try {
-            console.log('Creando transacción con datos completos:', JSON.stringify(req.body, null, 2));
             
             const { 
                 reference, 
@@ -67,10 +64,33 @@ class PaymentController {
                 });
             }
 
+            // Calcular el amount desde cartItems si no se proporciona
+            let calculatedAmount = amount;
+            if (!calculatedAmount && cartItems && cartItems.length > 0) {
+                calculatedAmount = cartItems.reduce((total, item) => {
+                    const itemPrice = parseFloat(item.product?.price || 0);
+                    const quantity = parseInt(item.quantity || 1);
+                    return total + (itemPrice * quantity);
+                }, 0);
+            }
+
+            // Si aún no hay amount, buscar el primer producto en cartItems
+            if (!calculatedAmount && cartItems && cartItems.length > 0) {
+                const firstProduct = cartItems[0].product;
+                if (firstProduct && firstProduct.price) {
+                    calculatedAmount = parseFloat(firstProduct.price);
+                }
+            }
+
+            // Si sigue sin amount, usar 0 como último recurso
+            if (!calculatedAmount) {
+                calculatedAmount = 0;
+            }
+
             // Valores por defecto para transacciones desde retorno de Wompi
             const transactionData = {
                 reference,
-                amount: amount || '0',
+                amount: calculatedAmount,
                 customerData: customer || { email: 'no-email@example.com' },
                 deliveryData: delivery || null,
                 cartItems: cartItems || [],
@@ -102,10 +122,8 @@ class PaymentController {
     async getPaymentStatus(req, res) {
         try {
             const { id } = req.params;
-            console.log('Consultando estado de pago para:', id);
 
             const result = await this.getPaymentStatusUseCase.execute(id);
-            console.log('Resultado de getPaymentStatusUseCase:', result);
 
             if (result.isSuccess) {
                 return res.json({
@@ -115,7 +133,6 @@ class PaymentController {
             } else {
                 // Si la transacción no existe, intentar crearla desde el webhook
                 if (result.error === 'Transacción no encontrada') {
-                    console.log('Transacción no encontrada, intentando crear desde webhook...');
                     
                     // Obtener datos del webhook si existen
                     const webhookResult = await this.processWebhookUseCase.execute({
@@ -159,42 +176,65 @@ class PaymentController {
 
     async handleWebhook(req, res) {
         try {
-            console.log('Webhook recibido de Wompi:', JSON.stringify(req.body, null, 2));
-            console.log('Headers del webhook:', JSON.stringify(req.headers, null, 2));
-            
             if (!this.processWebhookUseCase) {
-                console.log('ProcessWebhookUseCase no está disponible');
                 return res.status(200).json({
-                    success: true,
+                    success: false,
                     message: 'Webhook recibido pero no procesado (servicio no disponible)'
                 });
             }
 
             const result = await this.processWebhookUseCase.execute(req.body);
-            
+
             if (result.success) {
-                console.log('Webhook procesado exitosamente:', result.data);
-                res.status(200).json({
+                return res.status(200).json({
                     success: true,
                     message: 'Webhook procesado exitosamente',
                     data: result.data
                 });
             } else {
-                console.log('Error procesando webhook:', result.error);
-                // Aunque haya error en el procesamiento, respondemos 200 para que Wompi no reenvíe
-                res.status(200).json({
+                return res.status(200).json({
                     success: false,
                     message: 'Webhook recibido pero con errores en el procesamiento',
                     error: result.error
                 });
             }
         } catch (error) {
-            console.error('Error manejando webhook:', error);
-            // Respondemos 200 para evitar reintentos de Wompi
-            res.status(200).json({
+            return res.status(500).json({
                 success: false,
                 error: 'Error interno procesando webhook',
-                details: error.message
+                message: error.message
+            });
+        }
+    }
+
+    async setupWebhook(req, res) {
+        try {
+            if (!this.wompiAdapter) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Adaptador de Wompi no disponible'
+                });
+            }
+
+            const result = await this.wompiAdapter.setupWebhook();
+
+            if (result.success) {
+                return res.status(200).json({
+                    success: true,
+                    message: result.message,
+                    webhookId: result.webhookId
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: result.message
+                });
+            }
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                error: 'Error configurando webhook',
+                message: error.message
             });
         }
     }
@@ -205,7 +245,7 @@ class PaymentController {
             const { id } = req.params;
             const { status = 'COMPLETED' } = req.body;
             
-            console.log(`Actualizando estado de transacción ${id} a ${status}`);
+    
 
             // Buscar la transacción por ID o referencia
             let transaction = null;
@@ -231,7 +271,6 @@ class PaymentController {
                 try {
                     // Verificar si hay items en el carrito
                     if (transaction.cartItems && Array.isArray(transaction.cartItems)) {
-                        console.log('📦 Actualizando stock para múltiples productos:', transaction.cartItems);
                         
                         for (const item of transaction.cartItems) {
                             const productId = item.product?.id || item.productId;
@@ -242,9 +281,6 @@ class PaymentController {
                                 if (product && product.stock >= quantity) {
                                     const newStock = product.stock - quantity;
                                     await this.productRepository.updateStock(productId, newStock);
-                                    console.log(`✅ Stock actualizado para producto ${productId}: ${product.stock} -> ${newStock} (reducido en ${quantity})`);
-                                } else {
-                                    console.warn(`⚠️ Stock insuficiente para producto ${productId}. Stock disponible: ${product?.stock}, requerido: ${quantity}`);
                                 }
                             }
                         }
@@ -253,11 +289,10 @@ class PaymentController {
                         const product = await this.productRepository.findById(transaction.productId);
                         if (product && product.stock > 0) {
                             await this.productRepository.updateStock(product.id, product.stock - 1);
-                            console.log(`✅ Stock actualizado para producto individual ${product.id}: ${product.stock} -> ${product.stock - 1}`);
                         }
                     }
                 } catch (stockError) {
-                    console.warn('❌ Error actualizando stock:', stockError);
+                    // Error actualizando stock (silenciado)
                 }
             }
 
@@ -285,124 +320,72 @@ class PaymentController {
         }
     }
 
-    // Método para consultar estado real en Wompi y actualizar automáticamente
+    // Método para consultar estado directamente en Wompi
     async checkWompiStatus(req, res) {
         try {
             const { id } = req.params;
-            console.log(`🔍 Verificando estado real en Wompi para: ${id}`);
-
-            // Buscar la transacción por ID o referencia
-            let transaction = null;
-            if (!isNaN(id)) {
-                transaction = await this.transactionRepository.findById(parseInt(id));
-            }
-            if (!transaction) {
-                transaction = await this.transactionRepository.findByReference(id);
+            
+            if (!this.wompiAdapter) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Adaptador de Wompi no disponible'
+                });
             }
 
-            if (!transaction) {
+            // Consultar directamente en Wompi API
+            const wompiResponse = await fetch(`https://production.wompi.co/v1/transactions/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.WOMPI_PRIVATE_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!wompiResponse.ok) {
                 return res.status(404).json({
                     success: false,
-                    error: 'Transacción no encontrada'
+                    message: 'Transacción no encontrada en Wompi'
                 });
             }
 
-            // Si no hay wompiTransactionId, no podemos consultar Wompi
-            if (!transaction.wompiTransactionId) {
-                return res.json({
-                    success: true,
-                    message: 'No hay ID de Wompi para consultar',
-                    shouldUpdate: false,
-                    currentStatus: transaction.status
-                });
-            }
+            const wompiData = await wompiResponse.json();
 
-            try {
-                // Consultar estado real en Wompi
-                const wompiStatus = await this.wompiAdapter.getTransactionStatus(transaction.wompiTransactionId);
-                console.log(`📊 Estado en Wompi: ${wompiStatus} | Estado local: ${transaction.status}`);
-
-                // Mapear estados de Wompi a nuestros estados
-                const statusMapping = {
-                    'APPROVED': 'COMPLETED',
-                    'DECLINED': 'FAILED',
-                    'VOIDED': 'FAILED',
-                    'ERROR': 'FAILED',
-                    'PENDING': 'PENDING'
-                };
-
-                const newLocalStatus = statusMapping[wompiStatus] || 'PENDING';
-
-                // Si el estado cambió, actualizar la transacción
-                if (newLocalStatus !== transaction.status && newLocalStatus !== 'PENDING') {
-                    console.log(`🔄 Actualizando estado de ${transaction.status} → ${newLocalStatus}`);
-
-                    // Actualizar estado en la base de datos
-                    await this.transactionRepository.updateStatus(transaction.id, newLocalStatus, {
-                        wompiStatus: wompiStatus
-                    });
-
-                    // Si se aprobó, actualizar stock
-                    if (newLocalStatus === 'COMPLETED') {
-                        await this.updateProductStock(transaction);
-                    }
-
-                    return res.json({
-                        success: true,
-                        message: `Estado actualizado de ${transaction.status} a ${newLocalStatus} según Wompi`,
-                        shouldUpdate: true,
-                        previousStatus: transaction.status,
-                        newStatus: newLocalStatus,
-                        wompiStatus: wompiStatus
-                    });
-                } else {
-                    return res.json({
-                        success: true,
-                        message: 'Estado sin cambios',
-                        shouldUpdate: false,
-                        currentStatus: transaction.status,
-                        wompiStatus: wompiStatus
-                    });
-                }
-
-            } catch (wompiError) {
-                console.warn('⚠️ Error consultando Wompi:', wompiError.message);
+            if (wompiData.data) {
+                // Intentar encontrar nuestra transacción por referencia
+                let ourTransaction = await this.transactionRepository.findByReference(wompiData.data.reference);
                 
-                // Si Wompi no responde, simular aprobación después de cierto tiempo
-                const transactionAge = new Date() - new Date(transaction.createdAt);
-                const FIVE_MINUTES = 5 * 60 * 1000;
+                if (!ourTransaction) {
+                    // Si no la encontramos, crearla usando el webhook
+                    const webhookData = {
+                        event: 'transaction.updated',
+                        data: {
+                            transaction: wompiData.data
+                        }
+                    };
 
-                if (transactionAge > FIVE_MINUTES && transaction.status === 'PENDING') {
-                    console.log('⏰ Transacción antigua sin respuesta de Wompi, simulando aprobación...');
+                    const webhookResult = await this.processWebhookUseCase.execute(webhookData);
                     
-                    await this.transactionRepository.updateStatus(transaction.id, 'COMPLETED', {
-                        wompiStatus: 'SIMULATED_APPROVED'
-                    });
-                    
-                    await this.updateProductStock(transaction);
-
-                    return res.json({
-                        success: true,
-                        message: 'Pago simulado como aprobado (Wompi no disponible)',
-                        shouldUpdate: true,
-                        previousStatus: transaction.status,
-                        newStatus: 'COMPLETED',
-                        wompiStatus: 'SIMULATED_APPROVED'
-                    });
+                    if (webhookResult.success) {
+                        ourTransaction = await this.transactionRepository.findByReference(wompiData.data.reference);
+                    }
                 }
 
-                return res.json({
-                    success: false,
-                    error: 'Error consultando estado en Wompi',
-                    details: wompiError.message
+                return res.status(200).json({
+                    success: true,
+                    data: wompiData.data,
+                    ourTransaction: ourTransaction
                 });
             }
+
+            return res.status(404).json({
+                success: false,
+                message: 'Datos de transacción no válidos'
+            });
 
         } catch (error) {
-            console.error('Error verificando estado en Wompi:', error);
             return res.status(500).json({
                 success: false,
-                error: `Error interno: ${error.message}`
+                error: 'Error consultando estado en Wompi',
+                message: error.message
             });
         }
     }
@@ -411,7 +394,6 @@ class PaymentController {
     async updateProductStock(transaction) {
         try {
             if (transaction.cartItems && Array.isArray(transaction.cartItems)) {
-                console.log('📦 Actualizando stock para múltiples productos:', transaction.cartItems);
                 
                 for (const item of transaction.cartItems) {
                     const productId = item.product?.id || item.productId;
@@ -419,12 +401,9 @@ class PaymentController {
                     
                     if (productId) {
                         const product = await this.productRepository.findById(productId);
-                        if (product && product.stock >= quantity) {
-                            const newStock = product.stock - quantity;
-                            await this.productRepository.updateStock(productId, newStock);
-                            console.log(`✅ Stock actualizado para producto ${productId}: ${product.stock} → ${newStock} (reducido en ${quantity})`);
-                        } else {
-                            console.warn(`⚠️ Stock insuficiente para producto ${productId}. Stock disponible: ${product?.stock}, requerido: ${quantity}`);
+                                            if (product && product.stock >= quantity) {
+                        const newStock = product.stock - quantity;
+                        await this.productRepository.updateStock(productId, newStock);
                         }
                     }
                 }
@@ -433,11 +412,10 @@ class PaymentController {
                 const product = await this.productRepository.findById(transaction.productId);
                 if (product && product.stock > 0) {
                     await this.productRepository.updateStock(product.id, product.stock - 1);
-                    console.log(`✅ Stock actualizado para producto individual ${product.id}: ${product.stock} → ${product.stock - 1}`);
                 }
             }
         } catch (stockError) {
-            console.warn('❌ Error actualizando stock:', stockError);
+            // Error actualizando stock (silenciado)
         }
     }
 }

@@ -11,6 +11,7 @@ class WompiAdapter {
             }
         });
         this.integrityKey = config.integrityKey;
+        this.webhookUrl = config.webhookUrl || 'https://back-pasarela.onrender.com/api/payments/webhook';
     }
 
     generateSignature(reference, amountInCents, currency) {
@@ -20,6 +21,28 @@ class WompiAdapter {
         
         const message = `${reference}${amountInCents}${currency}${this.integrityKey}`;
         return crypto.createHash('sha256').update(message).digest('hex');
+    }
+
+    async setupWebhook() {
+        try {
+            const response = await this.client.post('/events', {
+                url: this.webhookUrl,
+                event_types: [
+                    'transaction.updated'
+                ]
+            });
+            
+            return {
+                success: true,
+                webhookId: response.data.data.id,
+                message: 'Webhook configurado exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: `Error configurando webhook: ${error.message}`
+            };
+        }
     }
 
     async processPayment(paymentData) {

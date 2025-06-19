@@ -22,7 +22,7 @@ async function seedProducts(Product) {
         const count = await Product.count();
         if (count === 0) {
             await Product.bulkCreate(productSeedData);
-            console.log('Test products created successfully');
+        
         }
     } catch (error) {
         console.error('Error seeding products:', error);

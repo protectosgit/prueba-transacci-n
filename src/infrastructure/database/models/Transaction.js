@@ -95,6 +95,13 @@ module.exports = (sequelize) => {
                 this.setDataValue('deliveryInfo', JSON.stringify(value || null));
             }
         },
+        totalItems: {
+            type: DataTypes.VIRTUAL,
+            get() {
+                const cartItems = this.cartItems || [];
+                return cartItems.reduce((total, item) => total + (parseInt(item.quantity) || 1), 0);
+            }
+        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
