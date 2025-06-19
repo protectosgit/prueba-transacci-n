@@ -36,8 +36,30 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (aplicaciones móviles, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Lista de origins permitidos
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://main.d10nqda7yg14nv.amplifyapp.com',
+      'https://main.d2dqy7vl9c624.amplifyapp.com'
+    ];
+    
+    // Permitir si está en la lista o si es localhost en desarrollo
+    if (allowedOrigins.includes(origin) || 
+        (process.env.NODE_ENV !== 'production' && origin.includes('localhost'))) {
+      callback(null, true);
+    } else {
+      console.warn(`❌ Origin no permitido: ${origin}`);
+      callback(null, true); // Temporal: permitir todos hasta verificar configuración
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -34,7 +34,7 @@ const config = {
             'http://127.0.0.1:3000',
             'http://127.0.0.1:5173',
             'https://main.d10nqda7yg14nv.amplifyapp.com',
-            'https://main.d2dqy7vl9c624.amplifyapp.com'
+            'https://*.amplifyapp.com'
         ]),
         allowCredentials: getBooleanEnv('CORS_ALLOW_CREDENTIALS', false),
         maxAge: getNumberEnv('CORS_MAX_AGE', 86400)
