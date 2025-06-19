@@ -10,9 +10,36 @@ class Server {
     }
 
     setupMiddleware() {
-        // Configuración de CORS para aceptar conexiones desde cualquier origen
         const corsOptions = {
-            origin: '*', 
+            origin: function (origin, callback) {
+                if (!origin) return callback(null, true);
+                
+                const allowedOrigins = [
+                    'http://localhost:3000',
+                    'http://localhost:3001', 
+                    'http://localhost:5173',
+                    'http://127.0.0.1:3000',
+                    'http://127.0.0.1:5173',
+                    'https://main.d2dqy7vl9c624.amplifyapp.com',
+                    'https://main.d10nqda7yg14nv.amplifyapp.com'
+                ];
+                
+                if (process.env.NODE_ENV !== 'production') {
+                    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                        return callback(null, true);
+                    }
+                }
+                
+                if (allowedOrigins.indexOf(origin) !== -1) {
+                    callback(null, true);
+                } else {
+                    if (process.env.NODE_ENV === 'production') {
+                        callback(new Error('No permitido por CORS'));
+                    } else {
+                        callback(null, true);
+                    }
+                }
+            },
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
             allowedHeaders: [
                 'Origin', 
@@ -21,19 +48,34 @@ class Server {
                 'Accept', 
                 'Authorization',
                 'Cache-Control',
-                'X-Forwarded-For'
+                'X-Forwarded-For',
+                'Access-Control-Allow-Origin'
             ],
             credentials: false,
-            optionsSuccessStatus: 200 // Para soporte de navegadores legacy
+            optionsSuccessStatus: 200,
+            preflightContinue: false
         };
         
         this.app.use(cors(corsOptions));
         
-        // Middleware adicional para headers de seguridad
         this.app.use((req, res, next) => {
-            res.header('Access-Control-Allow-Origin', '*');
+            const origin = req.headers.origin;
+            
+            if (process.env.NODE_ENV !== 'production') {
+                res.header('Access-Control-Allow-Origin', origin || '*');
+            } else {
+                const allowedOrigins = [
+                    'https://main.d2dqy7vl9c624.amplifyapp.com',
+                    'https://main.d10nqda7yg14nv.amplifyapp.com'
+                ];
+                if (allowedOrigins.includes(origin)) {
+                    res.header('Access-Control-Allow-Origin', origin);
+                }
+            }
+            
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-Forwarded-For');
+            res.header('Access-Control-Allow-Credentials', 'false');
             
             if (req.method === 'OPTIONS') {
                 res.status(200).end();
@@ -41,6 +83,13 @@ class Server {
             }
             next();
         });
+        
+        if (process.env.NODE_ENV !== 'production') {
+            this.app.use((req, res, next) => {
+                console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+                next();
+            });
+        }
         
         this.app.use(express.json());
     }
