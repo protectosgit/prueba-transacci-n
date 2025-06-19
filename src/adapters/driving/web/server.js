@@ -57,7 +57,11 @@ class Server {
                 'Authorization',
                 'Cache-Control',
                 'X-Forwarded-For',
-                'Access-Control-Allow-Origin'
+                'Access-Control-Allow-Origin',
+                'ngrok-skip-browser-warning',
+                'sec-ch-ua',
+                'sec-ch-ua-mobile',
+                'sec-ch-ua-platform'
             ],
             credentials: config.cors.allowCredentials,
             optionsSuccessStatus: 200,
@@ -83,7 +87,7 @@ class Server {
             }
             
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-Forwarded-For');
+            res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-Forwarded-For, ngrok-skip-browser-warning, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform');
             res.header('Access-Control-Allow-Credentials', config.cors.allowCredentials.toString());
             res.header('Access-Control-Max-Age', config.cors.maxAge.toString());
             
