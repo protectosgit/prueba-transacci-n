@@ -3,31 +3,40 @@ backend:
   phases:
     preBuild:
       commands:
-        - echo "Installing dependencies"
-        - npm ci --only=production
+        - echo "Installing Node.js dependencies"
+        - npm ci
+        - echo "Node version:" && node --version
+        - echo "NPM version:" && npm --version
     build:
       commands:
-        - echo "Building application"
+        - echo "Building backend application"
         - npm run build
-        - echo "Verifying structure"
+        - echo "Listing project structure"
+        - ls -la
         - ls -la src/
     postBuild:
       commands:
-        - echo "Build completed"
-        - node --version
-        - npm --version
+        - echo "Backend build completed successfully"
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "Backend only deployment"
+        - echo "This is a backend-only application"
+        - echo "Creating startup script"
+        - echo '#!/bin/bash' > start.sh
+        - echo 'cd /var/task' >> start.sh
+        - echo 'npm start' >> start.sh
+        - chmod +x start.sh
     build:
       commands:
-        - echo "No frontend build needed"
+        - echo "Preparing backend deployment"
+        - echo "Current directory:" && pwd
+        - echo "Files:" && ls -la
   artifacts:
-    baseDirectory: /
+    baseDirectory: .
     files:
       - "**/*"
+    name: backend-application
   cache:
     paths:
       - node_modules/**/* 
