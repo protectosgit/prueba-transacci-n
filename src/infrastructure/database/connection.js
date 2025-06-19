@@ -74,11 +74,24 @@ const connectDB = async (forceSync = false) => {
         // Configuración para Render y otras plataformas que usan DATABASE_URL
         if (config.database.url) {
             console.log('🔗 Conectando usando DATABASE_URL...');
+            console.log('🔑 URL de conexión:', config.database.url.replace(/:([^:@]{8})[^:@]*@/, ':***$1***@'));
+            
+            // Configuración optimizada para Render PostgreSQL
+            const dialectOptions = {};
+            
+            // Si la URL contiene 'render.com' o estamos en producción, usar SSL
+            if (config.database.url.includes('render.com') || process.env.NODE_ENV === 'production') {
+                dialectOptions.ssl = {
+                    require: true,
+                    rejectUnauthorized: false
+                };
+                console.log('🔒 SSL habilitado para conexión de producción');
+            }
+            
             sequelize = new Sequelize(config.database.url, {
                 dialect: config.database.dialect,
                 logging: false,
-                dialectOptions: config.database.dialectOptions,
-                ssl: config.database.ssl,
+                dialectOptions,
                 pool: {
                     max: 5,
                     min: 0,
@@ -88,6 +101,10 @@ const connectDB = async (forceSync = false) => {
             });
         } else {
             console.log('🔗 Conectando usando configuración individual...');
+            console.log('🏠 Host:', config.database.host);
+            console.log('🔢 Puerto:', config.database.port);
+            console.log('📊 BD:', config.database.name);
+            
             sequelize = new Sequelize(
                 config.database.name,
                 config.database.user,
@@ -97,8 +114,6 @@ const connectDB = async (forceSync = false) => {
                     port: config.database.port,
                     dialect: config.database.dialect,
                     logging: false,
-                    dialectOptions: config.database.dialectOptions,
-                    ssl: config.database.ssl,
                     pool: {
                         max: 5,
                         min: 0,

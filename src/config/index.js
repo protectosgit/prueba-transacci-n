@@ -13,26 +13,19 @@ const config = {
     port: getNumberEnv('PORT', 3000),
     host: getStringEnv('HOST', '0.0.0.0'), // Permitir conexiones desde cualquier IP
     database: {
-        // Soporte para DATABASE_URL (Render y otras plataformas)
-        url: getStringEnv('DATABASE_URL', null),
+        // DATABASE_URL para Render (interno) y desarrollo (externo)
+        url: getStringEnv('DATABASE_URL', 
+            process.env.NODE_ENV === 'production' 
+                ? 'postgresql://pasarela_db_user:GSR9FS8hyclcsCFxjeMkhEkD4LXIpOzc@dpg-d1a3ebqdbo4c73c3hat0-a/pasarela_db'
+                : 'postgresql://pasarela_db_user:GSR9FS8hyclcsCFxjeMkhEkD4LXIpOzc@dpg-d1a3ebqdbo4c73c3hat0-a.oregon-postgres.render.com/pasarela_db'
+        ),
         // Configuración individual (fallback)
-        host: getStringEnv('DB_HOST', 'dpg-d1a3ebqdbo4c73chat0-a.oregon-postgres.render.com'),
+        host: getStringEnv('DB_HOST', 'dpg-d1a3ebqdbo4c73c3hat0-a.oregon-postgres.render.com'),
         port: getNumberEnv('DB_PORT', 5432),
         name: getStringEnv('DB_NAME', 'pasarela_db'),
         user: getStringEnv('DB_USER', 'pasarela_db_user'),
         password: getStringEnv('DB_PASSWORD', 'GSR9FS8hyclcsCFxjeMkhEkD4LXIpOzc'),
-        dialect: 'postgres',
-        // Configuraciones adicionales para Render
-        ssl: getStringEnv('NODE_ENV') === 'production' ? {
-            require: true,
-            rejectUnauthorized: false
-        } : false,
-        dialectOptions: getStringEnv('NODE_ENV') === 'production' ? {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        } : {}
+        dialect: 'postgres'
     },
     wompi: {
         apiUrl: getStringEnv('WOMPI_API_URL', 'https://sandbox.wompi.co/v1'),
