@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: payment-processing-api
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      # Base de datos - Render PostgreSQL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pasarela_db
+          property: connectionString
+      - key: DB_HOST
+        value: dpg-d1a3ebqdbo4c73chat0-a.oregon-postgres.render.com
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        value: pasarela_db
+      - key: DB_USER
+        value: pasarela_db_user
+      - key: DB_PASSWORD
+        sync: false
+      # Wompi configuración para producción
+      - key: WOMPI_API_URL
+        value: https://api.wompi.co/v1
+      - key: WOMPI_PUBLIC_KEY
+        sync: false
+      - key: WOMPI_PRIVATE_KEY
+        sync: false
+      - key: WOMPI_EVENTS_KEY
+        sync: false
+      - key: WOMPI_INTEGRITY_KEY
+        sync: false 

@@ -20,7 +20,8 @@
     "payments",
     "hexagonal-architecture",
     "wompi",
-    "aws-amplify"
+    "render",
+    "backend"
   ],
   "author": "",
   "license": "ISC",

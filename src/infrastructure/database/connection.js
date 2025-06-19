@@ -71,23 +71,43 @@ const connectDB = async (forceSync = false) => {
         }
 
         // Crear nueva conexión
-        sequelize = new Sequelize(
-            config.database.name,
-            config.database.user,
-            config.database.password,
-            {
-                host: config.database.host,
-                port: config.database.port,
+        // Configuración para Render y otras plataformas que usan DATABASE_URL
+        if (config.database.url) {
+            console.log('🔗 Conectando usando DATABASE_URL...');
+            sequelize = new Sequelize(config.database.url, {
                 dialect: config.database.dialect,
                 logging: false,
+                dialectOptions: config.database.dialectOptions,
+                ssl: config.database.ssl,
                 pool: {
                     max: 5,
                     min: 0,
                     acquire: 30000,
                     idle: 10000
                 }
-            }
-        );
+            });
+        } else {
+            console.log('🔗 Conectando usando configuración individual...');
+            sequelize = new Sequelize(
+                config.database.name,
+                config.database.user,
+                config.database.password,
+                {
+                    host: config.database.host,
+                    port: config.database.port,
+                    dialect: config.database.dialect,
+                    logging: false,
+                    dialectOptions: config.database.dialectOptions,
+                    ssl: config.database.ssl,
+                    pool: {
+                        max: 5,
+                        min: 0,
+                        acquire: 30000,
+                        idle: 10000
+                    }
+                }
+            );
+        }
 
         await sequelize.authenticate();
         console.log('Conexión a la base de datos establecida exitosamente.');
