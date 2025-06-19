@@ -3,40 +3,31 @@ backend:
   phases:
     preBuild:
       commands:
-        - echo "AWS Amplify Backend Build Started"
-        - echo "Installing dependencies..."
+        - echo "Installing dependencies"
         - npm ci --only=production
-        - echo "Dependencies installed"
     build:
       commands:
-        - echo "Starting backend build process..."
+        - echo "Building application"
         - npm run build
-        - echo "Verifying application structure..."
+        - echo "Verifying structure"
         - ls -la src/
-        - echo "Checking package.json scripts..."
-        - npm run --silent
     postBuild:
       commands:
-        - echo "Backend build completed successfully"
-        - echo "Application ready for deployment"
-        - echo "Build summary:"
-        - echo "  - Node.js version: $(node --version)"
-        - echo "  - NPM version: $(npm --version)"
-        - echo "  - Environment: $NODE_ENV"
+        - echo "Build completed"
+        - node --version
+        - npm --version
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "Backend-only deployment - no frontend build required"
+        - echo "Backend only deployment"
     build:
       commands:
-        - echo "Skipping frontend build"
+        - echo "No frontend build needed"
   artifacts:
     baseDirectory: /
     files:
       - "**/*"
-    name: payment-api-backend
   cache:
     paths:
-      - node_modules/**/*
-      - ~/.npm/**/* 
+      - node_modules/**/* 
