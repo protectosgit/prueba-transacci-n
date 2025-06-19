@@ -1,4 +1,5 @@
 const axios = require('axios');
+const crypto = require('crypto');
 
 class WompiAdapter {
     constructor(config) {
@@ -9,20 +10,38 @@ class WompiAdapter {
                 'Content-Type': 'application/json'
             }
         });
+        this.integrityKey = config.integrityKey;
+    }
+
+    generateSignature(reference, amountInCents, currency) {
+        if (!this.integrityKey) {
+            throw new Error('Integrity key not configured');
+        }
+        
+        const message = `${reference}${amountInCents}${currency}${this.integrityKey}`;
+        return crypto.createHash('sha256').update(message).digest('hex');
     }
 
     async processPayment(paymentData) {
         try {
             this.validatePaymentData(paymentData);
 
+            const amountInCents = Math.round(paymentData.amount * 100);
+            const signature = this.generateSignature(
+                paymentData.transactionId, 
+                amountInCents, 
+                'COP'
+            );
+
             const response = await this.client.post('/transactions', {
-                amount_in_cents: Math.round(paymentData.amount * 100),
+                amount_in_cents: amountInCents,
                 currency: 'COP',
                 payment_method: {
                     type: 'CARD',
                     token: paymentData.token
                 },
-                reference: paymentData.transactionId
+                reference: paymentData.transactionId,
+                signature: signature
             });
 
             if (response.data.error) {

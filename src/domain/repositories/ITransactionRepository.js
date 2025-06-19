@@ -1,14 +1,14 @@
 class ITransactionRepository {
     async create(transaction) {
-        throw new Error('Method not implemented');
+        throw new Error('Método no implementado');
     }
 
     async getById(id) {
-        throw new Error('Method not implemented');
+        throw new Error('Método no implementado');
     }
 
     async update(id, transaction) {
-        throw new Error('Method not implemented');
+        throw new Error('Método no implementado');
     }
 
     async updateStatus(transactionId, newStatus) {

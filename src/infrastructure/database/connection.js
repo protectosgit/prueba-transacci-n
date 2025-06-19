@@ -44,18 +44,18 @@ const createTablesInOrder = async (models) => {
     try {
         // Primero crear las tablas base (sin dependencias)
         await models.Customer.sync();
-        console.log('✓ Tabla Customers verificada');
+        console.log('Tabla Customers verificada');
         
         await models.Product.sync();
-        console.log('✓ Tabla Products verificada');
+        console.log('Tabla Products verificada');
 
         // Luego crear la tabla de transacciones que depende de las anteriores
         await models.Transaction.sync();
-        console.log('✓ Tabla Transactions verificada');
+        console.log('Tabla Transactions verificada');
 
         // Finalmente crear la tabla de entregas que depende de transacciones
         await models.Delivery.sync();
-        console.log('✓ Tabla Deliveries verificada');
+        console.log(' Tabla Deliveries verificada');
     } catch (error) {
         console.error('Error al verificar las tablas:', error);
         throw error;
@@ -104,7 +104,7 @@ const connectDB = async (forceSync = false) => {
         await createTablesInOrder(models);
         
         console.log('\n=== Base de datos sincronizada exitosamente ===');
-        console.log('✓ Todas las tablas y relaciones han sido verificadas');
+        console.log('Todas las tablas y relaciones han sido verificadas');
         console.log('============================================\n');
 
         return {

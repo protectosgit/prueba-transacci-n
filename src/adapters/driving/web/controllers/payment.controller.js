@@ -1,4 +1,6 @@
 const CreatePaymentDTO = require('../../../../application/dtos/CreatePaymentDTO');
+const crypto = require('crypto');
+const config = require('../../../../config');
 
 class PaymentController {
     constructor(processPaymentUseCase) {
@@ -39,4 +41,41 @@ class PaymentController {
     }
 }
 
+// Generar firma de integridad para Wompi
+const generateIntegritySignature = (req, res) => {
+    try {
+        const { reference, amount_in_cents, currency } = req.body;
+        
+        // Validar parámetros requeridos
+        if (!reference || !amount_in_cents || !currency) {
+            return res.status(400).json({
+                error: 'Parámetros requeridos: reference, amount_in_cents, currency'
+            });
+        }
+
+        // Crear cadena para firma según documentación Wompi
+        const concatenatedString = `${reference}${amount_in_cents}${currency}${config.wompi.integrityKey}`;
+        
+        // Generar hash SHA256
+        const integrity = crypto
+            .createHash('sha256')
+            .update(concatenatedString)
+            .digest('hex');
+
+        res.json({
+            integrity,
+            reference,
+            amount_in_cents,
+            currency
+        });
+
+    } catch (error) {
+        console.error('Error generando firma de integridad:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor'
+        });
+    }
+};
+
 module.exports = PaymentController;
+module.exports.generateIntegritySignature = generateIntegritySignature;

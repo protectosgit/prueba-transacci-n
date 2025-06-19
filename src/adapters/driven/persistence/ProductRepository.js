@@ -50,6 +50,15 @@ class ProductRepository {
             throw new Error(`Error al guardar el producto: ${error.message}`);
         }
     }
+
+    async findAll() {
+        try {
+            const products = await this.model.findAll();
+            return products.map(product => new Product(product.toJSON()));
+        } catch (error) {
+            throw new Error(`Error al obtener los productos: ${error.message}`);
+        }
+    }
 }
 
 module.exports = ProductRepository;

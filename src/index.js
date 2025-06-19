@@ -17,6 +17,7 @@ const WompiAdapter = require('./adapters/driven/pagos-externos/WompiAdapter');
 // Casos de uso
 const GetProductUseCase = require('./application/use-cases/GetProductUseCase');
 const CreateProductUseCase = require('./application/use-cases/CreateProductUseCase');
+const GetAllProductsUseCase = require('./application/use-cases/GetAllProductsUseCase');
 const ProcessPaymentUseCase = require('./application/use-cases/ProcessPaymentUseCase');
 
 // Rutas
@@ -38,6 +39,7 @@ const startServer = async () => {
     // Configurar casos de uso
     const getProductUseCase = new GetProductUseCase(productRepository);
     const createProductUseCase = new CreateProductUseCase(productRepository);
+    const getAllProductsUseCase = new GetAllProductsUseCase(productRepository);
     const processPaymentUseCase = new ProcessPaymentUseCase(
       transactionRepository,
       productRepository,
@@ -45,7 +47,11 @@ const startServer = async () => {
     );
 
     // Configurar controladores
-    const productController = new ProductController(getProductUseCase, createProductUseCase);
+    const productController = new ProductController(
+      getProductUseCase,
+      createProductUseCase,
+      getAllProductsUseCase
+    );
     const paymentController = new PaymentController(processPaymentUseCase);
 
     // Configurar rutas
