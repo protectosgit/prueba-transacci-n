@@ -29,25 +29,45 @@ class ProcessWebhookUseCase {
             }
 
             if (!ourTransaction) {
-                // Crear nueva transacción desde el webhook
-                const newTransactionData = {
-                    reference: transaction.reference || wompiTransactionId,
-                    amount: transaction.amount_in_cents / 100, // Convertir centavos a pesos
-                    status: this.mapWompiStatusToInternal(transaction.status),
-                    paymentMethod: 'credit_card',
-                    paymentToken: wompiTransactionId,
-                    wompiTransactionId: wompiTransactionId,
-                    wompiStatus: transaction.status,
-                    wompiResponse: JSON.stringify(webhookData),
-                    customerId: 1, // Por ahora usar cliente fijo, se puede mejorar
-                    productId: 1,  // Por ahora usar producto fijo, se puede mejorar
-                    failureReason: transaction.status_message || null
-                };
-                
-                try {
-                    ourTransaction = await this.transactionRepository.save(newTransactionData);
-                } catch (createError) {
-                    return Result.failure(`Error creando transacción: ${createError.message}`);
+                // NO crear transacciones automáticamente desde webhooks transaction.created
+                // porque tienen datos vacíos (amount_in_cents: 0)
+                if (webhookData.event === 'transaction.created') {
+                    return Result.success({
+                        message: 'Webhook transaction.created ignorado - esperando datos del frontend',
+                        transactionId: null,
+                        wompiTransactionId: wompiTransactionId
+                    });
+                }
+
+                // Solo crear transacciones desde webhooks que no sean 'transaction.created'
+                // y que tengan datos válidos
+                if (transaction.amount_in_cents > 0) {
+                    const newTransactionData = {
+                        reference: transaction.reference || wompiTransactionId,
+                        amount: transaction.amount_in_cents / 100,
+                        status: this.mapWompiStatusToInternal(transaction.status),
+                        paymentMethod: 'credit_card',
+                        paymentToken: wompiTransactionId,
+                        wompiTransactionId: wompiTransactionId,
+                        wompiStatus: transaction.status,
+                        wompiResponse: JSON.stringify(webhookData),
+                        customerId: 1,
+                        productId: 1,
+                        failureReason: transaction.status_message || null
+                    };
+                    
+                    try {
+                        ourTransaction = await this.transactionRepository.save(newTransactionData);
+                    } catch (createError) {
+                        return Result.failure(`Error creando transacción: ${createError.message}`);
+                    }
+                } else {
+                    // Webhook sin datos válidos, ignorar
+                    return Result.success({
+                        message: 'Webhook ignorado - datos insuficientes',
+                        transactionId: null,
+                        wompiTransactionId: wompiTransactionId
+                    });
                 }
             }
 

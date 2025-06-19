@@ -16,8 +16,8 @@ class CreateTransactionUseCase {
                 return Result.fail('La referencia es requerida');
             }
 
-            if (!transactionData.amount) {
-                return Result.fail('El monto es requerido');
+            if (!transactionData.amount || transactionData.amount === 0 || transactionData.amount === '0') {
+                return Result.fail('El monto es requerido y debe ser mayor a 0');
             }
 
             if (!transactionData.customerData) {
@@ -52,20 +52,31 @@ class CreateTransactionUseCase {
                     console.error('Error actualizando cliente:', error);
                 }
 
-                // Actualizar la transacción con el monto correcto
+                // Actualizar la transacción con los datos correctos del frontend
                 try {
-                    const updatedTransactionData = {
-                        ...existingTransaction,
-                        amount: transactionData.amount,
-                        // Mantener el productId del primer producto del carrito
-                        productId: transactionData.cartItems?.[0]?.product?.id || existingTransaction.productId,
-                        // Guardar todos los elementos del carrito
-                        cartItems: transactionData.cartItems || [],
-                        // Guardar información de entrega
-                        deliveryInfo: transactionData.deliveryData || null
-                    };
-                    
-                    await this.transactionRepository.update(updatedTransactionData);
+                    // Actualizar si los datos del frontend son más completos
+                    const shouldUpdate = (
+                        // Si el amount actual es 0 y el frontend trae un amount válido
+                        (parseFloat(existingTransaction.amount) === 0 && parseFloat(transactionData.amount) > 0) ||
+                        // Si no hay cartItems y el frontend trae cartItems
+                        ((!existingTransaction.cartItems || existingTransaction.cartItems.length === 0) && 
+                         (transactionData.cartItems && transactionData.cartItems.length > 0)) ||
+                        // Si la transacción viene de webhook (tiene wompiResponse) y ahora llegan datos del frontend
+                        (existingTransaction.wompiResponse && transactionData.cartItems && transactionData.cartItems.length > 0)
+                    );
+
+                    if (shouldUpdate) {
+                        const updatedTransactionData = {
+                            ...existingTransaction,
+                            amount: parseFloat(transactionData.amount),
+                            productId: transactionData.cartItems?.[0]?.product?.id || existingTransaction.productId,
+                            cartItems: transactionData.cartItems || existingTransaction.cartItems,
+                            deliveryInfo: transactionData.deliveryData || existingTransaction.deliveryInfo,
+                            paymentMethod: transactionData.paymentMethod || existingTransaction.paymentMethod
+                        };
+                        
+                        await this.transactionRepository.update(updatedTransactionData);
+                    }
                 } catch (error) {
                     console.error('Error actualizando transacción:', error);
                 }
