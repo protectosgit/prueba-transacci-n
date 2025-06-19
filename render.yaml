@@ -7,18 +7,30 @@ services:
     startCommand: npm start
     healthCheckPath: /
     envVars:
+      # Configuración básica
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
       - key: HOST
         value: 0.0.0.0
-      # Base de datos - URL interna de Render (automática)
+      
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://main.d10nqda7yg14nv.amplifyapp.com,https://main.d2dqy7vl9c624.amplifyapp.com,https://back-pasarela.onrender.com"
+      - key: CORS_ALLOW_CREDENTIALS
+        value: false
+      - key: CORS_MAX_AGE
+        value: 86400
+      
+      - key: FRONTEND_AMPLIFY_URL
+        value: https://main.d10nqda7yg14nv.amplifyapp.com
+      - key: FRONTEND_PROD_URL
+        value: https://main.d10nqda7yg14nv.amplifyapp.com
+      
       - key: DATABASE_URL
         fromDatabase:
           name: pasarela_db
           property: connectionString
-      # Variables adicionales por si se necesitan individualmente
       - key: DB_HOST
         value: dpg-d1a3ebqdbo4c73c3hat0-a.oregon-postgres.render.com
       - key: DB_PORT
@@ -29,14 +41,32 @@ services:
         value: pasarela_db_user
       - key: DB_PASSWORD
         value: GSR9FS8hyclcsCFxjeMkhEkD4LXIpOzc
-      # Wompi configuración para producción
+      - key: DB_SSL
+        value: true
+      
       - key: WOMPI_API_URL
         value: https://api.wompi.co/v1
       - key: WOMPI_PUBLIC_KEY
-        sync: false
+        sync: false  # Configurar manualmente en Render Dashboard
       - key: WOMPI_PRIVATE_KEY
-        sync: false
+        sync: false  # Configurar manualmente en Render Dashboard
       - key: WOMPI_EVENTS_KEY
-        sync: false
+        sync: false  # Configurar manualmente en Render Dashboard
       - key: WOMPI_INTEGRITY_KEY
-        sync: false 
+        sync: false  # Configurar manualmente en Render Dashboard
+      
+      # Configuración de logging
+      - key: LOG_LEVEL
+        value: info
+      - key: LOG_SQL
+        value: false
+      - key: LOG_REQUESTS
+        value: false
+      
+      # Configuración de seguridad
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: ENABLE_HELMET
+        value: true 

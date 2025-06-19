@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const config = require('../../../config');
 
 class Server {
     constructor(productRoutes, paymentRoutes) {
@@ -10,32 +11,39 @@ class Server {
     }
 
     setupMiddleware() {
+        // Configuración dinámica de CORS basada en variables de entorno
         const corsOptions = {
-            origin: function (origin, callback) {
-                if (!origin) return callback(null, true);
+            origin: (origin, callback) => {
+                // Permitir requests sin origin (aplicaciones móviles, Postman, etc.)
+                if (!origin) {
+                    if (config.logging.enableRequests) {
+                        console.log('🌐 Request sin origin permitido (móvil/Postman)');
+                    }
+                    return callback(null, true);
+                }
                 
-                const allowedOrigins = [
-                    'http://localhost:3000',
-                    'http://localhost:3001', 
-                    'http://localhost:5173',
-                    'http://127.0.0.1:3000',
-                    'http://127.0.0.1:5173',
-                    'https://main.d2dqy7vl9c624.amplifyapp.com',
-                    'https://main.d10nqda7yg14nv.amplifyapp.com'
-                ];
-                
-                if (process.env.NODE_ENV !== 'production') {
+                // En desarrollo, ser más permisivo con localhost
+                if (config.nodeEnv !== 'production') {
                     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+                        if (config.logging.enableRequests) {
+                            console.log(`🌐 Origin localhost permitido: ${origin}`);
+                        }
                         return callback(null, true);
                     }
                 }
                 
-                if (allowedOrigins.indexOf(origin) !== -1) {
+                // Verificar si el origin está en la lista de allowed origins
+                if (config.cors.allowedOrigins.includes(origin)) {
+                    if (config.logging.enableRequests) {
+                        console.log(`✅ Origin permitido: ${origin}`);
+                    }
                     callback(null, true);
                 } else {
-                    if (process.env.NODE_ENV === 'production') {
-                        callback(new Error('No permitido por CORS'));
+                    if (config.nodeEnv === 'production') {
+                        console.warn(`❌ Origin no permitido en producción: ${origin}`);
+                        callback(new Error(`Origin ${origin} no permitido por CORS`));
                     } else {
+                        console.log(`⚠️ Origin no en lista pero permitido en desarrollo: ${origin}`);
                         callback(null, true);
                     }
                 }
@@ -51,32 +59,35 @@ class Server {
                 'X-Forwarded-For',
                 'Access-Control-Allow-Origin'
             ],
-            credentials: false,
+            credentials: config.cors.allowCredentials,
             optionsSuccessStatus: 200,
-            preflightContinue: false
+            preflightContinue: false,
+            maxAge: config.cors.maxAge
         };
         
         this.app.use(cors(corsOptions));
         
+        // Middleware adicional para headers explícitos
         this.app.use((req, res, next) => {
             const origin = req.headers.origin;
             
-            if (process.env.NODE_ENV !== 'production') {
+            // Configurar headers dinámicamente
+            if (config.nodeEnv !== 'production') {
+                // En desarrollo, ser más permisivo
                 res.header('Access-Control-Allow-Origin', origin || '*');
             } else {
-                const allowedOrigins = [
-                    'https://main.d2dqy7vl9c624.amplifyapp.com',
-                    'https://main.d10nqda7yg14nv.amplifyapp.com'
-                ];
-                if (allowedOrigins.includes(origin)) {
+                // En producción, verificar lista específica
+                if (config.cors.allowedOrigins.includes(origin)) {
                     res.header('Access-Control-Allow-Origin', origin);
                 }
             }
             
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, X-Forwarded-For');
-            res.header('Access-Control-Allow-Credentials', 'false');
+            res.header('Access-Control-Allow-Credentials', config.cors.allowCredentials.toString());
+            res.header('Access-Control-Max-Age', config.cors.maxAge.toString());
             
+            // Manejar preflight requests
             if (req.method === 'OPTIONS') {
                 res.status(200).end();
                 return;
@@ -84,14 +95,24 @@ class Server {
             next();
         });
         
-        if (process.env.NODE_ENV !== 'production') {
+        // Middleware de logging
+        if (config.logging.enableRequests) {
             this.app.use((req, res, next) => {
-                console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+                const timestamp = new Date().toISOString();
+                const origin = req.headers.origin || 'Sin origin';
+                console.log(`🌐 [${timestamp}] ${req.method} ${req.path} - Origin: ${origin}`);
                 next();
             });
         }
         
         this.app.use(express.json());
+        
+        // Log de configuración al iniciar
+        console.log('🔧 Configuración CORS cargada:');
+        console.log(`   📍 Entorno: ${config.nodeEnv}`);
+        console.log(`   🌐 Origins permitidos: ${config.cors.allowedOrigins.length} configurados`);
+        console.log(`   🔐 Credentials: ${config.cors.allowCredentials}`);
+        console.log(`   ⏱️ Max Age: ${config.cors.maxAge}s`);
     }
 
     setupRoutes(productRoutes, paymentRoutes) {
